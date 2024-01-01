@@ -1,6 +1,11 @@
 # sous_vide_arduino
 Projecte Treball de Recerca de Sous Vide, programat amb Arduino
 
+## Llibreries
+* DallasTemperature
+* OneWire
+* [Grove_LCD_RGB_Backlight](https://github.com/Seeed-Studio/Sketchbook_Starter_Kit_V2.0/tree/master/libraries/Grove_LCD_RGB_Backlight)
+
 # Milestones
 ## Milestone A
 
