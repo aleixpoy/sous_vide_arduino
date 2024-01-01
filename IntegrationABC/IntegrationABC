@@ -1,0 +1,103 @@
+#include <Wire.h>
+#include "rgb_lcd.h"
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+const int pinTempSensor = 8;
+const int pinRelayHeater = 13;
+const int pinRelayPump = 13;
+const int pinSwitch = 2;
+const int pinPotentiometer = A4;
+const int pinYellowLED = 3;
+const int pinGreenLED = 4;
+const int pinRedLED = 7;
+
+const int minTemp = 0;
+const int maxTemp = 100;
+
+float MeasuredTemperature;
+float ReferenceTemperature;
+
+boolean systemOn = false;
+
+OneWire oneWire(pinTempSensor);
+DallasTemperature sensors(&oneWire);
+rgb_lcd lcd;
+
+void updateLCD(float measuredTemp, float referenceTemp) {
+    lcd.setCursor(0, 0);
+    lcd.print("Sensor = ");
+    lcd.setCursor(9, 0);
+    lcd.print(measuredTemp);
+    lcd.setCursor(14, 0);
+    lcd.print(" C");
+    
+    lcd.setCursor(0, 1);
+    lcd.print("Refern = ");
+    lcd.setCursor(9, 1);
+    lcd.print(referenceTemp);
+    lcd.setCursor(14, 1);
+    lcd.print(" C");
+}
+
+void control_heater(float measuredTemp, float referenceTemp) {
+    if (measuredTemp < referenceTemp) {
+      digitalWrite(pinRelayHeater, LOW);
+    } else {
+      digitalWrite(pinRelayHeater, HIGH);
+    }
+}
+
+void display_LEDs_temperature(float measuredTemp, float referenceTemp) {
+    if (measuredTemp < referenceTemp) {
+      digitalWrite(pinYellowLED, HIGH);
+      digitalWrite(pinGreenLED, LOW);
+      digitalWrite(pinRedLED, LOW);
+    } else if (measuredTemp >= referenceTemp &&
+               measuredTemp <= referenceTemp + 2) {
+      digitalWrite(pinYellowLED, LOW);
+      digitalWrite(pinGreenLED, HIGH);
+      digitalWrite(pinRedLED, LOW);
+    } else {
+      digitalWrite(pinYellowLED, LOW);
+      digitalWrite(pinGreenLED, LOW);
+      digitalWrite(pinRedLED, HIGH);
+    }
+}
+
+float measure_temperature() {
+    sensors.requestTemperatures();
+    float MeasuredTemp = sensors.getTempCByIndex(0);
+    return MeasuredTemp;
+}
+
+float set_reference_temperature() {
+    int potValue = analogRead(pinPotentiometer);
+    float ReferenceTemp = map(potValue, 0, 1023, minTemp, maxTemp);
+    return ReferenceTemp;
+}
+
+void turn_off_outputs() {
+    digitalWrite(pinRelayHeater, LOW);
+    digitalWrite(pinRelayPump, LOW);
+
+    digitalWrite(pinYellowLED, LOW);
+    digitalWrite(pinGreenLED, LOW);
+    digitalWrite(pinRedLED, LOW);
+}
+
+void loop() { 
+  MeasuredTemperature = measure_temperature();
+  ReferenceTemperature = set_reference_temperature();
+  systemOn = digitalRead(pinSwitch);
+
+  if (systemOn) {
+    control_heater(MeasuredTemperature, ReferenceTemperature);
+    display_LEDs_temperature(MeasuredTemperature, ReferenceTemperature);
+    update_LCD(MeasuredTemperature, ReferenceTemperature);
+  } else {
+    turn_off_outputs();
+  }
+
+  delay(500);
+}
